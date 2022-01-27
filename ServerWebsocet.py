@@ -4,11 +4,11 @@ import random
 from authlib.integrations.flask_client import OAuth
 
 
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 oauth = OAuth(app)
+
 
 github = oauth.register (
   name = 'github',
@@ -36,14 +36,15 @@ def handle_my_custom_event(json):
 
 @app.route('/')
 def index():
-        return render_template('index.html')
+    if github.authorize_token:
+        return redirect('/login')
+    return render_template('index.html')
 
 @app.route('/login')
 def github_login():
     github = oauth.create_client('github')
     redirect_uri = url_for('github_authorize', _external=True)
     return github.authorize_redirect(redirect_uri)
-
 
 @app.route('/login/github/authorize')
 def github_authorize():
@@ -54,6 +55,7 @@ def github_authorize():
 
 @app.route('/logout')
 def logout():
+    
     return redirect('/login')
 
 
