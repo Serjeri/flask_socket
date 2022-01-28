@@ -1,4 +1,4 @@
-from flask import Flask, redirect, render_template,url_for
+from flask import Flask, redirect, render_template,url_for, session
 from flask_socketio import SocketIO, emit
 import random
 from authlib.integrations.flask_client import OAuth
@@ -9,11 +9,10 @@ app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 oauth = OAuth(app)
 
-
 github = oauth.register (
   name = 'github',
-    client_id = "d275dbdf14445daa91d6",
-    client_secret = "95256032aeb42969d07c72dcd98c860ed347d075",
+    client_id = "client_id",
+    client_secret = "client_secret",
     access_token_url = 'https://github.com/login/oauth/access_token',
     access_token_params = None,
     authorize_url = 'https://github.com/login/oauth/authorize',
@@ -22,26 +21,25 @@ github = oauth.register (
     client_kwargs = {'scope': 'user:email'},
 )
 
-
+# Сервер генерирует число и отправляет на клиент
 @socketio.on('message')
 def handle_my_custom_event(json):
-    print('received my event: ' + str(json))
+    print('received my event: ' + str(json))# Подтверждение на подключение клиента
     while True:
         try:
-            emit('message', {'goodbye': random.random()})                        
-            socketio.sleep(5)
+            emit('message', {'goodbye': random.random()})# Отправка рандомного числа на клиент
+            socketio.sleep(5)# Задержка в 5 сек на отправку
         except:
             pass
     
 
 @app.route('/')
-def index():
-    if github.authorize_token:
-        return redirect('/login')
+def index():# Не реализована не хватило времени разобраться
+            # Ограничение прав доступа
     return render_template('index.html')
 
 @app.route('/login')
-def github_login():
+def github_login():# Авторизация на github
     github = oauth.create_client('github')
     redirect_uri = url_for('github_authorize', _external=True)
     return github.authorize_redirect(redirect_uri)
@@ -49,13 +47,12 @@ def github_login():
 @app.route('/login/github/authorize')
 def github_authorize():
     github = oauth.create_client('github')
-    token = github.authorize_access_token()
-    resp = github.get('userinfo').json()
+    tokenId = github.authorize_access_token()
+    session['api_session_token'] = tokenId['access_token']
     return redirect('/')
 
 @app.route('/logout')
 def logout():
-    
     return redirect('/login')
 
 
